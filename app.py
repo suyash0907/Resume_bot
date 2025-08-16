@@ -1,10 +1,11 @@
 import streamlit as st
-from langchain.embeddings import SentenceTransformerEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains import RetrievalQA
-from langchain.llms import HuggingFaceHub
+from langchain_community.llms import HuggingFaceHub
 import os
+
 
 # HuggingFace API key (you can get free from https://huggingface.co/settings/tokens)
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token = st.secrets["hf_token"]
@@ -43,3 +44,4 @@ if prompt := st.chat_input("Ask me about my skills, projects, or experience...")
     answer = qa.run(prompt)
     st.session_state.messages.append({"role": "assistant", "content": answer})
     st.chat_message("assistant").markdown(answer)
+
