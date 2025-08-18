@@ -1,8 +1,6 @@
-streamlit
-PyPDF2
 langchain
 langchain-community
+langchain-huggingface
+PyPDF2
 faiss-cpu
 sentence-transformers
-huggingface-hub
-
