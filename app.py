@@ -1,59 +1,69 @@
 import streamlit as st
-from PyPDF2 import PdfReader
-from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import HuggingFaceHub
-from langchain.chains import ConversationalRetrievalChain
+from langchain_huggingface import HuggingFaceEndpoint
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema import StrOutputParser
 import os
 
-# 1. Page config
-st.set_page_config(page_title="🤖 Resume Chatbot", layout="wide")
-st.title("🤖 Resume Chatbot – Ask me anything about Suyash!")
+DB_DIR = "db"
 
-# 2. Load Resume PDF directly (no upload needed)
-with open("Suyash_Dombe_Resume.pdf", "rb") as f:
-    pdf_reader = PdfReader(f)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text()
+st.set_page_config(page_title="Resume Chatbot - Ask about Suyash", page_icon="🤖")
+st.title("🤖 Resume Chatbot – Ask me anything about Suyash")
 
-# 3. Split text
-text_splitter = CharacterTextSplitter(
-    separator="\n", chunk_size=800, chunk_overlap=100, length_function=len
-)
-chunks = text_splitter.split_text(text)
-
-# 4. Embeddings & Vector DB
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-vectorstore = FAISS.from_texts(chunks, embeddings)
-
-# 5. Hugging Face API token (from secrets)
+# 🔑 Hugging Face API token
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["hf_token"]
 
-llm = HuggingFaceHub(
-    repo_id="tiiuae/falcon-7b-instruct",
-    model_kwargs={"temperature": 0.3, "max_new_tokens": 512}
+# Load vector DB & embeddings (from your prebuilt db in repo)
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+vectordb = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=True)
+retriever = vectordb.as_retriever(search_kwargs={"k": 4})
+
+# Cloud-friendly LLM via Hugging Face Inference API
+llm = HuggingFaceEndpoint(
+    repo_id="google/flan-t5-base",   # small & reliable model
+    temperature=0.4,
+    max_new_tokens=512,
 )
 
-# 6. Conversational Chain
-qa = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=vectorstore.as_retriever(),
+SYSTEM_PROMPT = """You are a helpful assistant that answers strictly using the provided context about 'Suyash'.
+If the answer is not in the context, say you don't know based on the resume.
+Keep answers concise, factual, and interview-friendly.
+"""
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM_PROMPT),
+    ("human", "Context:\n{context}\n\nUser question: {question}")
+])
+
+def format_docs(docs):
+    return "\n\n".join([d.page_content for d in docs])
+
+# RAG chain
+chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
 )
 
-# 7. Chat UI
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# Chat UI
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-query = st.text_input("💬 Ask a question about my resume:")
-if query:
-    result = qa({"question": query, "chat_history": st.session_state.chat_history})
-    st.session_state.chat_history.append((query, result["answer"]))
+user_q = st.chat_input("e.g., Tell me about Suyash's projects, skills, internships…")
+for role, content in st.session_state.history:
+    with st.chat_message(role):
+        st.markdown(content)
 
-# Display conversation
-for q, a in st.session_state.chat_history:
-    st.markdown(f"**You:** {q}")
-    st.markdown(f"**Bot:** {a}")
+if user_q:
+    st.session_state.history.append(("user", user_q))
+    with st.chat_message("user"):
+        st.markdown(user_q)
 
-
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking…"):
+            answer = chain.invoke(user_q)
+            st.markdown(answer)
+    st.session_state.history.append(("assistant", answer))
