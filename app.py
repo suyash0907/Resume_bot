@@ -33,7 +33,7 @@ if pdf:
 
     # 5. Load LLM (Hugging Face Inference API, free tier)
     import os
-    os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HF_TOKEN"]
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["hf_token"]
 
     llm = HuggingFaceHub(
         repo_id="tiiuae/falcon-7b-instruct",  # lightweight open-source model
@@ -59,3 +59,4 @@ if pdf:
     for q, a in st.session_state.chat_history:
         st.markdown(f"**You:** {q}")
         st.markdown(f"**Bot:** {a}")
+
