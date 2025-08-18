@@ -12,7 +12,7 @@ st.set_page_config(page_title="🤖 Resume Chatbot", layout="wide")
 st.title("🤖 Resume Chatbot – Ask me anything about Suyash!")
 
 # 2. Load Resume PDF directly (no upload needed)
-with open("resume.pdf", "rb") as f:
+with open("Suyash_Dombe_Resume.pdf", "rb") as f:
     pdf_reader = PdfReader(f)
     text = ""
     for page in pdf_reader.pages:
@@ -55,3 +55,4 @@ if query:
 for q, a in st.session_state.chat_history:
     st.markdown(f"**You:** {q}")
     st.markdown(f"**Bot:** {a}")
+
