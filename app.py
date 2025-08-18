@@ -1,47 +1,61 @@
 import streamlit as st
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-from langchain_community.vectorstores import FAISS
+from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain_community.llms import HuggingFaceHub
-import os
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.llms import HuggingFaceHub
+from langchain.chains import ConversationalRetrievalChain
 
+# 1. Page config
+st.set_page_config(page_title="🤖 Resume Chatbot", layout="wide")
 
-# HuggingFace API key (you can get free from https://huggingface.co/settings/tokens)
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = hf_token = st.secrets["hf_token"]
+st.title("🤖 Resume Chatbot – Ask me anything about Suyash!")
 
-# Load resume
-with open("resume.txt", "r") as f:
-    resume_text = f.read()
+# 2. Upload Resume
+pdf = st.file_uploader("📄 Upload your Resume PDF", type=["pdf"])
 
-# Split into chunks
-text_splitter = CharacterTextSplitter(chunk_size=200, chunk_overlap=20)
-docs = text_splitter.split_text(resume_text)
+if pdf:
+    # Read PDF
+    pdf_reader = PdfReader(pdf)
+    text = ""
+    for page in pdf_reader.pages:
+        text += page.extract_text()
 
-# Embed resume into vector database
-embeddings = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
-db = FAISS.from_texts(docs, embeddings)
+    # 3. Split text
+    text_splitter = CharacterTextSplitter(
+        separator="\n", chunk_size=800, chunk_overlap=100, length_function=len
+    )
+    chunks = text_splitter.split_text(text)
 
-# Use free HuggingFace model for Q&A
-llm = HuggingFaceHub(repo_id="google/flan-t5-base", model_kwargs={"temperature":0, "max_length":256})
+    # 4. Embeddings & Vector DB
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectorstore = FAISS.from_texts(chunks, embeddings)
 
-qa = RetrievalQA.from_chain_type(llm=llm, retriever=db.as_retriever())
+    # 5. Load LLM (Hugging Face Inference API, free tier)
+    import os
+    os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["HF_TOKEN"]
 
-# Streamlit UI
-st.set_page_config(page_title="Suyash's Resume Chatbot", page_icon="🤖")
-st.title("🤖 Resume Chatbot - Ask me anything about Suyash!")
+    llm = HuggingFaceHub(
+        repo_id="tiiuae/falcon-7b-instruct",  # lightweight open-source model
+        model_kwargs={"temperature": 0.3, "max_new_tokens": 512}
+    )
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    # 6. Conversational Chain
+    qa = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+    )
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).markdown(msg["content"])
+    # 7. Chat UI
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
 
-if prompt := st.chat_input("Ask me about my skills, projects, or experience..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user").markdown(prompt)
+    query = st.text_input("💬 Ask a question about my resume:")
+    if query:
+        result = qa({"question": query, "chat_history": st.session_state.chat_history})
+        st.session_state.chat_history.append((query, result["answer"]))
 
-    answer = qa.run(prompt)
-    st.session_state.messages.append({"role": "assistant", "content": answer})
-    st.chat_message("assistant").markdown(answer)
-
+    # Display conversation
+    for q, a in st.session_state.chat_history:
+        st.markdown(f"**You:** {q}")
+        st.markdown(f"**Bot:** {a}")
