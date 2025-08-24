@@ -14,7 +14,7 @@ st.set_page_config(page_title="Resume Chatbot - Ask about Suyash", page_icon="�
 st.title("🤖 Resume Chatbot – Ask me anything about Suyash")
 
 # 🔑 Hugging Face API token
-# hf_token = st.secrets["hf_token"]
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["hf_token"]
 
 # Load vector DB & embeddings (from your prebuilt db in repo)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -24,7 +24,6 @@ retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 # Cloud-friendly LLM via Hugging Face Inference API
 llm = HuggingFaceHub(
     model_name="HuggingFaceH4/zephyr-7b-beta",
-    huggingfacehub_api_token=st.secrets["hf_token"],
     temperature=0.4,
     max_new_tokens=512,
 )
@@ -72,6 +71,7 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
 
 
 
