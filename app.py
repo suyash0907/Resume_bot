@@ -22,7 +22,7 @@ retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
 # Cloud-friendly LLM via Hugging Face Inference API
 llm = HuggingFaceEndpoint(
-    repo_id="google/flan-t5-base",
+    repo_id="google/flan-t5-large",
     task="text-generation", # Add this line
     temperature=0.4,
     max_new_tokens=512,
@@ -68,6 +68,7 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
 
 
 
