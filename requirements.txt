@@ -7,3 +7,5 @@ PyPDF2
 torch
 transformers
 sentence-transformers
+langchain==0.1.131
+
