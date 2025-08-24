@@ -14,7 +14,7 @@ st.set_page_config(page_title="Resume Chatbot - Ask about Suyash", page_icon="�
 st.title("🤖 Resume Chatbot – Ask me anything about Suyash")
 
 # 🔑 Hugging Face API token
-HUGGINGFACEHUB_API_TOKEN = st.secrets["hf_token"]
+hf_token = st.secrets["hf_token"]
 
 # Load vector DB & embeddings (from your prebuilt db in repo)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -71,6 +71,7 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
 
 
 
