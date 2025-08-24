@@ -22,10 +22,12 @@ vectordb = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=
 retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
 # Cloud-friendly LLM via Hugging Face Inference API
-llm = HuggingFaceHub(
-    repo_id="google/flan-t5-small",  # free model
-    model_kwargs={"temperature": 0.5, "max_length": 256}
+llm = HuggingFaceEndpoint(
+    repo_id="google/flan-t5-base",   # small & reliable model
+    temperature=0.4,
+    max_new_tokens=512,
 )
+
 
 SYSTEM_PROMPT = """You are a helpful assistant that answers strictly using the provided context about 'Suyash'.
 If the answer is not in the context, say you don't know based on the resume.
