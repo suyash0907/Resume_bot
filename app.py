@@ -2,7 +2,6 @@ import streamlit as st
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_huggingface import HuggingFaceEndpoint
-from langchain_community.llms import HuggingFaceHub
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema import StrOutputParser
@@ -22,14 +21,11 @@ vectordb = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=
 retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
 # Cloud-friendly LLM via Hugging Face Inference API
-llm = HuggingFaceHub(
-    model_name="google/flan-t5-base",
+llm = HuggingFaceEndpoint(
+    repo_id="google/flan-t5-base",   # small & reliable model
     temperature=0.4,
     max_new_tokens=512,
 )
-
-
-
 
 SYSTEM_PROMPT = """You are a helpful assistant that answers strictly using the provided context about 'Suyash'.
 If the answer is not in the context, say you don't know based on the resume.
@@ -71,19 +67,3 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
