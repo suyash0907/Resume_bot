@@ -1,7 +1,0 @@
-Name: Suyash Dombe
-Role: Data Analyst / AI Engineer
-Skills: Python, SQL, Machine Learning, Flask, Streamlit, Power BI
-Project 1: Vidsnap AI - Flask-based app that generates AI campaign videos.
-Project 2: Fraud Detection ML - Model with 95% accuracy.
-Experience: Data Science Intern at XYZ, AI Research Assistant
-Education: B.Tech in Computer Science, 2024
