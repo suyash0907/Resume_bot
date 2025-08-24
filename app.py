@@ -39,7 +39,13 @@ def format_docs(docs):
 
 # ✅ Custom function to call HF API
 def call_llm(prompt_text: str):
-    return client.text_generation(prompt_text, max_new_tokens=512, temperature=0.4)
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": prompt_text}
+    ]
+    response = client.conversational(messages, max_new_tokens=512, temperature=0.4)
+    return response.generated_text
+
 
 # RAG chain
 chain = (
@@ -68,3 +74,4 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
