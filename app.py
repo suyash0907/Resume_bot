@@ -6,6 +6,7 @@ from langchain_community.llms import HuggingFaceHub
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema import StrOutputParser
+from langchain.chat_models import HuggingFaceChat
 import os
 
 DB_DIR = "db"
@@ -22,9 +23,8 @@ vectordb = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=
 retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
 # Cloud-friendly LLM via Hugging Face Inference API
-llm = HuggingFaceEndpoint(
-    repo_id="google/flan-t5-base",
-    task="text2text-generation",   # ✅ works
+llm = HuggingFaceChat(
+    model_name="HuggingFaceH4/zephyr-7b-beta",
     temperature=0.4,
     max_new_tokens=512,
 )
@@ -72,6 +72,7 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
 
 
 
