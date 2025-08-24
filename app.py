@@ -13,7 +13,7 @@ st.set_page_config(page_title="Resume Chatbot - Ask about Suyash", page_icon="�
 st.title("🤖 Resume Chatbot – Ask me anything about Suyash")
 
 # 1. Load vector DB & embeddings
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2", model_kwargs={"device": "cpu"})
 vectordb = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=True)
 retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
@@ -66,3 +66,4 @@ if user_q := st.chat_input("e.g., Tell me about Suyash's projects..."):
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
