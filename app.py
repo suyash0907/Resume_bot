@@ -6,7 +6,6 @@ from langchain_community.llms import HuggingFaceHub
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema import StrOutputParser
-from langchain.chat_models import HuggingFaceChat
 import os
 
 DB_DIR = "db"
@@ -72,6 +71,7 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
 
 
 
