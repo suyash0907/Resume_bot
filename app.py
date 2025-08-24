@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from huggingface_hub import InferenceClient
+from langchain_huggingface import HuggingFaceEndpoint
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema import StrOutputParser
@@ -13,16 +13,19 @@ st.set_page_config(page_title="Resume Chatbot - Ask about Suyash", page_icon="�
 st.title("🤖 Resume Chatbot – Ask me anything about Suyash")
 
 # 🔑 Hugging Face API token
-HF_TOKEN = st.secrets["hf_token"]
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = HF_TOKEN
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = st.secrets["hf_token"]
 
-# Load vector DB & embeddings
+# Load vector DB & embeddings (from your prebuilt db in repo)
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 vectordb = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=True)
 retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 
-# ✅ Direct Hugging Face Inference Client
-client = InferenceClient(model="HuggingFaceH4/zephyr-7b-alpha", token=HF_TOKEN)
+# Cloud-friendly LLM via Hugging Face Inference API
+llm = HuggingFaceEndpoint(
+    repo_id="google/flan-t5-base",   # small & reliable model
+    temperature=0.4,
+    max_new_tokens=512,
+)
 
 SYSTEM_PROMPT = """You are a helpful assistant that answers strictly using the provided context about 'Suyash'.
 If the answer is not in the context, say you don't know based on the resume.
@@ -37,26 +40,11 @@ prompt = ChatPromptTemplate.from_messages([
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
-# ✅ Custom function to call HF API
-def call_llm(prompt_text: str):
-    # format conversation manually
-    messages = f"<|system|>\n{SYSTEM_PROMPT}\n<|user|>\n{prompt_text}\n<|assistant|>\n"
-
-    response = client.text_generation(
-        messages,
-        model="HuggingFaceH4/zephyr-7b-alpha",
-        max_new_tokens=512,
-        temperature=0.4,
-        stream=False
-    )
-    return response
-
-
 # RAG chain
 chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | prompt
-    | (lambda x: call_llm(x.to_string()))   # replace LLM with our function
+    | llm
     | StrOutputParser()
 )
 
@@ -79,5 +67,3 @@ if user_q:
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
-
-
