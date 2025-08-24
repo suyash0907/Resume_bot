@@ -20,10 +20,11 @@ retriever = vectordb.as_retriever(search_kwargs={"k": 4})
 # 2. Use the new HuggingFaceEndpoint class for the LLM
 # This is the modern way to connect to Hugging Face models
 llm = HuggingFaceEndpoint(
-    repo_id="ghazalnazari1990/Chat.with.your.PDF",
+    repo_id="HuggingFaceH4/zephyr-7b-beta",
     huggingfacehub_api_token=st.secrets["hf_token"], # Token is passed directly
     temperature=0.4,
     max_new_tokens=512,
+    provider="hf-inference",
 )
 
 # 3. Define the prompt template
@@ -66,6 +67,7 @@ if user_q := st.chat_input("e.g., Tell me about Suyash's projects..."):
             answer = chain.invoke(user_q)
             st.markdown(answer)
     st.session_state.history.append(("assistant", answer))
+
 
 
 
